@@ -197,6 +197,8 @@ export default function ProductForm({ initialData, isEditMode = false }: Product
     const [metaDescription, setMetaDescription] = useState(initialData?.seo_description || '');
     const [urlSlug, setUrlSlug] = useState(initialData?.slug || '');
     const [keywords, setKeywords] = useState(initialData?.tags?.join(', ') || '');
+    const [seoGenerating, setSeoGenerating] = useState(false);
+    const [seoError, setSeoError] = useState('');
 
     const tabs = [
         { id: 'general', label: 'General', icon: 'ri-information-line' },
@@ -1016,10 +1018,58 @@ export default function ProductForm({ initialData, isEditMode = false }: Product
 
                     {activeTab === 'seo' && (
                         <div className="space-y-6 max-w-3xl">
-                            <div>
-                                <h3 className="text-lg font-bold text-gray-900 mb-1">Search Engine Optimization</h3>
-                                <p className="text-gray-600">Optimize how this product appears in search results</p>
+                            <div className="flex flex-wrap items-center justify-between gap-4">
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-900 mb-1">Search Engine Optimization</h3>
+                                    <p className="text-gray-600">Optimize how this product appears in search results</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        if (!productName.trim()) return;
+                                        setSeoError('');
+                                        setSeoGenerating(true);
+                                        try {
+                                            const res = await fetch('/api/admin/generate-product-seo', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ name: productName.trim(), description: description.trim() || undefined }),
+                                            });
+                                            const data = await res.json();
+                                            if (!res.ok) {
+                                                setSeoError(data?.error || 'Failed to generate');
+                                                return;
+                                            }
+                                            if (data.seoTitle) setSeoTitle(data.seoTitle);
+                                            if (data.metaDescription) setMetaDescription(data.metaDescription);
+                                            if (data.keywords) setKeywords(data.keywords);
+                                        } catch {
+                                            setSeoError('Network error');
+                                        } finally {
+                                            setSeoGenerating(false);
+                                        }
+                                    }}
+                                    disabled={!productName.trim() || seoGenerating}
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    {seoGenerating ? (
+                                        <>
+                                            <i className="ri-loader-4-line text-lg animate-spin" />
+                                            Generating…
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="ri-magic-line text-lg" />
+                                            Generate with AI
+                                        </>
+                                    )}
+                                </button>
                             </div>
+                            {seoError && (
+                                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                                    {seoError}
+                                </div>
+                            )}
 
                             <div>
                                 <label className="block text-sm font-semibold text-gray-900 mb-2">

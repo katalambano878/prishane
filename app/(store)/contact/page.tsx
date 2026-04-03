@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useCMS } from '@/context/CMSContext';
 import { supabase } from '@/lib/supabase';
+import { whatsAppUrl } from '@/lib/whatsapp';
 import PageHero from '@/components/PageHero';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useRecaptcha } from '@/hooks/useRecaptcha';
@@ -103,8 +104,8 @@ export default function ContactPage() {
     {
       icon: 'ri-whatsapp-line',
       title: 'WhatsApp',
-      value: contactPhone,
-      link: `https://wa.me/233${(contactPhone || '').replace(/\s/g, '').replace(/^0/, '')}`,
+      value: getSetting('social_whatsapp') || contactPhone,
+      link: whatsAppUrl(getSetting('social_whatsapp') || contactPhone, "Hi! I'd like to ask about your products."),
       description: getSetting('contact_whatsapp_hours') || 'Chat with us on WhatsApp'
     },
     {

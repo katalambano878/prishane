@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { cachedQuery } from '@/lib/query-cache';
 import ProductCard from '@/components/ProductCard';
 import ProductReviews from '@/components/ProductReviews';
+import SocialShareButtons from '@/components/SocialShareButtons';
 import { StructuredData, generateProductSchema, generateBreadcrumbSchema } from '@/components/SEOHead';
 import { notFound } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
@@ -39,6 +40,7 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
   const [activeTab, setActiveTab] = useState('description');
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+  const [shareUrl, setShareUrl] = useState('');
 
   const { addToCart } = useCart();
 
@@ -182,6 +184,12 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
     }
   }, [slug]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && slug) {
+      setShareUrl(`${window.location.origin}/product/${slug}`);
+    }
+  }, [slug]);
+
   const hasVariants = product?.variants?.length > 0;
   const hasColors = product?.colors?.length > 0;
   const needsVariantSelection = hasVariants && !selectedVariant;
@@ -249,6 +257,9 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
 
   const discount = product.compare_at_price ? Math.round((1 - activePrice / product.compare_at_price) * 100) : 0;
   const minVariantPrice = hasVariants ? Math.min(...product.variants.map((v: any) => v.price || product.price)) : product.price;
+
+  const fullShareUrl = shareUrl || (typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || '') + `/product/${slug}`;
+  const shareText = `${product.name} ${fullShareUrl}`;
 
   const productSchema = generateProductSchema({
     name: product.name,
@@ -358,6 +369,26 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
                     ))}
                   </div>
                   <span className="text-gray-700 font-medium">{Number(product.rating).toFixed(1)}</span>
+                </div>
+
+                {/* Share: WhatsApp + social */}
+                <div className="flex flex-wrap items-center gap-2 mb-6">
+                  <span className="text-sm font-medium text-gray-600 mr-1">Share:</span>
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#25D366] text-white text-sm font-medium hover:bg-[#20BD5A] transition-colors"
+                  >
+                    <i className="ri-whatsapp-fill text-lg" />
+                    WhatsApp
+                  </a>
+                  <SocialShareButtons
+                    url={fullShareUrl}
+                    title={product.name}
+                    description={product.description}
+                    image={product.images?.[0]}
+                  />
                 </div>
 
                 <div className="flex items-baseline space-x-4 mb-6">

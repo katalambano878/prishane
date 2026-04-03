@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCMS } from '@/context/CMSContext';
 import { motion } from 'framer-motion';
+import { whatsAppUrl } from '@/lib/whatsapp';
 
 export default function Footer() {
   const { getSetting } = useCMS();
@@ -10,6 +11,7 @@ export default function Footer() {
   const siteName = getSetting('site_name') || 'Prishane Hair';
   const contactEmail = getSetting('contact_email') || '';
   const contactPhone = getSetting('contact_phone') || '';
+  const socialWhatsApp = getSetting('social_whatsapp') || contactPhone;
   const socialInstagram = getSetting('social_instagram') || '';
   const socialFacebook = getSetting('social_facebook') || '';
   const socialTiktok = getSetting('social_tiktok') || '';
@@ -114,6 +116,19 @@ export default function Footer() {
                   <i className="ri-phone-line mt-0.5"></i>
                   <a href={`tel:${contactPhone.replace(/\s/g, '')}`} className="hover:text-white transition-colors">
                     {contactPhone}
+                  </a>
+                </li>
+              )}
+              {socialWhatsApp && (
+                <li className="flex items-start gap-3">
+                  <i className="ri-whatsapp-line mt-0.5"></i>
+                  <a
+                    href={whatsAppUrl(socialWhatsApp, "Hi! I'd like to know more about your products.")}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition-colors inline-flex items-center gap-2"
+                  >
+                    Chat on WhatsApp
                   </a>
                 </li>
               )}

@@ -105,7 +105,37 @@ If automatic notification fails:
 - `app/admin/orders/[id]/OrderDetailClient.tsx` - Added resend notification feature
 - `app/admin/orders/page.tsx` - Auth tokens for bulk updates
 
-## 8. Testing Checklist
+## 8. Bulk SMS & Marketing Campaigns
+
+**Where:** Admin → **Marketing & Notifications** (sidebar under “Modules” or “Notifications”).
+
+**What you can do today:**
+- **Audience:** Choose who receives the campaign:
+  - **All Customers** – everyone in the `customers` table with email or phone
+  - **VIP** – customers whose total spend is over GH₵1,000
+  - **Returning** – customers with 2+ orders
+  - **New** – customers who joined in the last 30 days
+  - **At Risk** – customers with 2+ orders but no order in the last 90 days
+- **Channels:** Send **Email**, **SMS**, or both. Recipients are deduplicated by phone and email; only contacts that have the selected channel (e.g. phone for SMS) are included.
+- **Send:** One-off “Send Campaign” sends in batches of 50. You get a summary of emails and SMS sent (and any failures).
+
+**Periodic / scheduled campaigns (future):**  
+Sending is currently **manual only** (click “Send Campaign”). To support **recurring** or **scheduled** campaigns (e.g. weekly promo, monthly newsletter), you’d need to add:
+- A **campaigns** (or similar) table to store: audience segment, subject, message, channels, schedule (cron expression or next run time).
+- A **cron job** (e.g. Vercel Cron or external scheduler) that runs on a schedule, loads due campaigns, builds the recipient list by segment (reusing the same segment logic as above), and calls the same `/api/notifications` campaign flow. No change to the SMS/email sending logic is required; only scheduling and persistence.
+
+## 9. WhatsApp Business (easy marketing)
+
+**What’s in place (no API key required):**
+- **Storefront:** Floating “Chat on WhatsApp” button (green, bottom-right) and footer “Chat on WhatsApp” link. Both use the number from **Admin → Settings → WhatsApp Number** (or Contact Phone) and open WhatsApp with a short pre-filled message (e.g. “Hi! I’d like to know more about your products.”).
+- **Contact page:** WhatsApp card uses the same number and a pre-filled message.
+- **Marketing & Notifications:** In the campaign form, a **WhatsApp marketing** box lets you **Copy message** (for pasting into WhatsApp Broadcast or groups) and **Copy share link** (opens WhatsApp with the campaign message pre-filled so you can send to your list from your phone).
+
+**Setup:** Set **WhatsApp Number** in Admin → Settings → Contact / Social (e.g. `0595211414` for Ghana). The app formats it for `wa.me` (233...) automatically.
+
+**Future (programmatic send):** To send campaign messages to many contacts *via WhatsApp* from the app (like SMS), you’d need the **WhatsApp Business API** (e.g. Meta Cloud API, Twilio, MessageBird), business verification, and template approval. The current flow supports “copy and use in your WhatsApp app” for easy marketing without API setup.
+
+## 10. Testing Checklist
 
 - [ ] Add `SUPABASE_SERVICE_ROLE_KEY` to Vercel
 - [ ] Test SMS via Admin → SMS Debugger
@@ -113,3 +143,5 @@ If automatic notification fails:
 - [ ] Verify callback is received (check Vercel logs)
 - [ ] Confirm SMS is received
 - [ ] Test "Resend Notifications" button in order detail
+- [ ] Test bulk campaign: Admin → Marketing & Notifications → pick segment (e.g. All), enable SMS and/or Email → Send Campaign
+- [ ] Test WhatsApp: floating button and footer link open WhatsApp; Marketing page “Copy message” / “Copy share link” work

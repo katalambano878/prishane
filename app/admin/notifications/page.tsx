@@ -28,12 +28,34 @@ export default function NotificationsPage() {
                 throw new Error('You must be logged in as admin to send campaigns');
             }
 
-            // 2. Fetch Recipients from the customers table (includes secondary contacts)
+            // 2. Fetch Recipients from the customers table (includes secondary contacts and segment data)
             const { data: customers, error: fetchError } = await supabase
                 .from('customers')
-                .select('email, phone, full_name, secondary_phone, secondary_email');
+                .select('email, phone, full_name, secondary_phone, secondary_email, total_orders, total_spent, last_order_at, created_at');
 
             if (fetchError) throw fetchError;
+
+            // Assign segment per customer (same logic as Customer Insights)
+            const getSegment = (c: any) => {
+                const totalSpent = Number(c.total_spent) || 0;
+                const orderCount = Number(c.total_orders) || 0;
+                const lastOrder = c.last_order_at ? new Date(c.last_order_at).getTime() : 0;
+                const created = c.created_at ? new Date(c.created_at).getTime() : 0;
+                const now = Date.now();
+                const daysSinceJoin = (now - created) / (1000 * 3600 * 24);
+                const daysSinceLastOrder = lastOrder ? (now - lastOrder) / (1000 * 3600 * 24) : 999;
+                if (totalSpent > 1000) return 'vip';
+                if (orderCount > 1 && daysSinceLastOrder > 90) return 'at-risk';
+                if (daysSinceJoin < 30) return 'new';
+                if (orderCount > 1) return 'returning';
+                return 'returning';
+            };
+
+            // Filter by selected audience segment
+            const filtered = (customers || []).filter((c: any) => {
+                if (form.audience === 'all') return true;
+                return getSegment(c) === form.audience;
+            });
 
             // Build recipients with deduplication
             const seenPhones = new Set<string>();
@@ -42,7 +64,7 @@ export default function NotificationsPage() {
             const normalizePhone = (p: string) => p.replace(/[\s\-\(\)\.]+/g, '').replace(/^00/, '+');
 
             const recipients: any[] = [];
-            for (const c of (customers || [])) {
+            for (const c of filtered) {
                 const phones = [c.phone, c.secondary_phone].filter(Boolean).map((p: string) => normalizePhone(p));
                 const emails = [c.email, c.secondary_email].filter(Boolean).map((e: string) => e.toLowerCase().trim());
 
@@ -162,8 +184,12 @@ export default function NotificationsPage() {
                             className="w-full p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-gray-600"
                         >
                             <option value="all">All Customers</option>
-                            <option value="newsletter">Newsletter Subscribers</option>
+                            <option value="vip">VIP (spent over GH₵1,000)</option>
+                            <option value="returning">Returning (2+ orders)</option>
+                            <option value="new">New (joined in last 30 days)</option>
+                            <option value="at-risk">At Risk (no order in 90+ days)</option>
                         </select>
+                        <p className="text-sm text-gray-500 mt-1">Recipients are filtered by segment; only contacts with the selected channel (email/SMS) are included.</p>
                     </div>
 
                     <div className="flex gap-6 p-4 bg-gray-50 rounded-lg border border-gray-100">
@@ -211,6 +237,41 @@ export default function NotificationsPage() {
                             required
                         />
                         <p className="text-sm text-gray-500 mt-1">This message will be used for the email body (wrapped in a template) and SMS content (if selected).</p>
+                    </div>
+
+                    <div className="p-4 bg-[#E8F5E9] border border-[#25D366]/30 rounded-lg">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                            <i className="ri-whatsapp-fill text-[#25D366] text-lg" />
+                            WhatsApp marketing
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-3">Use this message in WhatsApp Broadcast or groups. Copy the text or the share link (opens WhatsApp with message pre-filled).</p>
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const text = [form.subject, form.message].filter(Boolean).join('\n\n');
+                                    navigator.clipboard.writeText(text || form.message);
+                                    setSuccess('Message copied to clipboard. Paste it in WhatsApp Broadcast or a group.');
+                                    setTimeout(() => setSuccess(''), 3000);
+                                }}
+                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#25D366] text-white text-sm font-medium hover:bg-[#20BD5A] transition-colors"
+                            >
+                                <i className="ri-file-copy-line" /> Copy message
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const text = [form.subject, form.message].filter(Boolean).join('\n\n') || form.message;
+                                    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+                                    navigator.clipboard.writeText(url);
+                                    setSuccess('WhatsApp share link copied. Open it on your phone to send to your list.');
+                                    setTimeout(() => setSuccess(''), 3000);
+                                }}
+                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-[#25D366] text-[#25D366] text-sm font-medium hover:bg-[#25D366]/10 transition-colors"
+                            >
+                                <i className="ri-link" /> Copy share link
+                            </button>
+                        </div>
                     </div>
 
                     <button
