@@ -73,10 +73,10 @@ function ShopContent() {
               .select(`
                 *,
                 categories!inner(name, slug),
-                product_images!product_id(url, position),
+                product_images(url, position),
                 product_variants(id, name, price, quantity, option1, option2, image_url)
               `, { count: 'exact' })
-              .order('position', { foreignTable: 'product_images', ascending: true });
+              .order('position', { ascending: true })  // product_images ordered in compat when selected;
 
             // Search
             if (search) {
