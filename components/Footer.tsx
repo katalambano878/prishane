@@ -16,6 +16,8 @@ export default function Footer() {
   const socialFacebook = getSetting('social_facebook') || '';
   const socialTiktok = getSetting('social_tiktok') || '';
   const socialSnapchat = getSetting('social_snapchat') || '';
+  const poweredBy = getSetting('footer_powered_by') || 'Doctor Barns Tech';
+  const poweredByLink = getSetting('footer_powered_by_link') || 'https://doctorbarns.com';
 
   const links = [
     { label: 'Shop', href: '/shop' },
@@ -141,7 +143,10 @@ export default function Footer() {
         </div>
 
         <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-500">
-          <p>© {new Date().getFullYear()} {siteName}. All rights reserved.</p>
+          <p>
+            © {new Date().getFullYear()} {siteName}. All rights reserved. Powered by{' '}
+            <a href={poweredByLink} target="_blank" rel="noopener" className="hover:text-white hover:underline transition-colors">{poweredBy}</a>
+          </p>
           <div className="flex gap-6">
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
